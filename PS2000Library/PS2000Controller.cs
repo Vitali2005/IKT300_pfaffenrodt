@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.IO.Ports;
 using System.Threading;
 
-namespace PS2000Gui
+namespace PS2000Library
 {
-    public class PS2000Controller
+    internal class PS2000Controller : IPowerSupply
     {
         private string? _portName;
 
@@ -18,7 +18,9 @@ namespace PS2000Gui
 
         public void Connect(string portName)
         {
-            // Verify that the COM port can actually be opened.
+            if (IsConnected)
+                return;
+
             using SerialPort port = CreateSerialPort(portName);
 
             port.Open();
@@ -32,25 +34,10 @@ namespace PS2000Gui
             _portName = null;
         }
 
-        // ---------------------------------------------------------
-        // DEVICE INFORMATION
-        // ---------------------------------------------------------
-
         public string GetDeviceType()
         {
             EnsureConnected();
 
-            // The object number for this value is not part of the
-            // object list available for this project.
-            return "Needs Object List";
-        }
-
-        public string GetArticleNumber()
-        {
-            EnsureConnected();
-
-            // The object number for this value is not part of the
-            // object list available for this project.
             return "Needs Object List";
         }
 
@@ -58,7 +45,6 @@ namespace PS2000Gui
         {
             EnsureConnected();
 
-            // OBJ 0x01 = Serial number
             byte[] request =
             {
                 0x7F,
@@ -71,20 +57,25 @@ namespace PS2000Gui
             List<byte> response = SendTelegram(request, 500);
 
             if (response.Count < 4)
+            {
                 throw new InvalidOperationException(
                     "Invalid response while reading serial number.");
+            }
 
-            // The lower four bits of the SD byte hold the payload length.
-            string binary = Convert.ToString(response[0], 2).PadLeft(8, '0');
+            string binary =
+                Convert.ToString(response[0], 2).PadLeft(8, '0');
 
-            string payloadLengthBinary = binary.Substring(4);
+            string payloadLengthBinary =
+                binary.Substring(4);
 
             int payloadLength =
                 Convert.ToInt32(payloadLengthBinary, 2);
 
             if (response[2] != 0x01)
+            {
                 throw new InvalidOperationException(
                     "PS2000 returned an unexpected object.");
+            }
 
             string serialNumber = "";
 
@@ -92,21 +83,24 @@ namespace PS2000Gui
                  i < payloadLength && (3 + i) < response.Count;
                  i++)
             {
-                serialNumber += Convert.ToChar(response[3 + i]);
+                serialNumber +=
+                    Convert.ToChar(response[3 + i]);
             }
 
             return serialNumber;
         }
 
-        // ---------------------------------------------------------
-        // VOLTAGE
-        // ---------------------------------------------------------
+        public string GetArticleNumber()
+        {
+            EnsureConnected();
+
+            return "Needs Object List";
+        }
 
         public double GetMaximumVoltage()
         {
             EnsureConnected();
 
-            // OBJ 0x02 = Nominal voltage
             byte[] request =
             {
                 0x74,
@@ -116,13 +110,15 @@ namespace PS2000Gui
                 0x76
             };
 
-            List<byte> response = SendTelegram(request, 50);
+            List<byte> response =
+                SendTelegram(request, 50);
 
             if (response.Count < 7)
+            {
                 throw new InvalidOperationException(
                     "Invalid response while reading maximum voltage.");
+            }
 
-            // The PS2000 sends the float in reversed byte order.
             byte[] voltageBytes =
             {
                 response[6],
@@ -131,26 +127,24 @@ namespace PS2000Gui
                 response[3]
             };
 
-            float nominalVoltage =
-                BitConverter.ToSingle(voltageBytes, 0);
-
-            return nominalVoltage;
+            return BitConverter.ToSingle(
+                voltageBytes,
+                0);
         }
 
         public double GetCurrentVoltage()
         {
             EnsureConnected();
 
-            // SD = MessageType + CastType + Direction + Length
             int sdHex =
                 0x40 +
                 0x20 +
                 0x10 +
                 5;
 
-            byte sd = Convert.ToByte(sdHex);
+            byte sd =
+                Convert.ToByte(sdHex);
 
-            // OBJ 0x47 = status / actual values
             byte[] request =
             {
                 sd,
@@ -162,14 +156,15 @@ namespace PS2000Gui
 
             AddChecksum(request);
 
-            List<byte> response = SendTelegram(request, 500);
+            List<byte> response =
+                SendTelegram(request, 500);
 
             if (response.Count < 7)
+            {
                 throw new InvalidOperationException(
                     "Invalid response while reading current voltage.");
+            }
 
-            // Bytes 5 and 6 hold the actual voltage as a percentage
-            // of the nominal voltage, where 25600 equals 100 %.
             int percentVoltage =
                 (response[5] << 8) |
                 response[6];
@@ -188,9 +183,11 @@ namespace PS2000Gui
             EnsureConnected();
 
             if (voltage < 0)
+            {
                 throw new ArgumentOutOfRangeException(
                     nameof(voltage),
                     "Voltage cannot be negative.");
+            }
 
             double maximumVoltage =
                 GetMaximumVoltage();
@@ -213,7 +210,6 @@ namespace PS2000Gui
             byte lowByte =
                 (byte)(percentSetValue & 0xFF);
 
-            // OBJ 0x32 = Set voltage
             byte[] request =
             {
                 0xF2,
@@ -230,69 +226,14 @@ namespace PS2000Gui
             List<byte> response =
                 SendTelegram(request, 500);
 
-            if (response.Count < 4)
-                throw new InvalidOperationException(
-                    "No valid response after setting voltage.");
-
-            if (response[3] != 0)
-            {
-                throw new InvalidOperationException(
-                    $"PS2000 rejected voltage change. Error code: {response[3]}");
-            }
+            ValidateCommandResponse(
+                response,
+                "Voltage change");
         }
-
-        // ---------------------------------------------------------
-        // REMOTE CONTROL
-        // ---------------------------------------------------------
-
-        public void SetRemoteControl(bool enabled)
-        {
-            EnsureConnected();
-
-            // OBJ 0x36 = Power supply control
-            // Mask 0x10 controls remote/manual mode.
-            // Data 0x10 = Remote
-            // Data 0x00 = Manual
-
-            byte[] request =
-            {
-                0xF1,
-                0x00,
-                0x36,
-                0x10,
-                enabled ? (byte)0x10 : (byte)0x00,
-                0x00,
-                0x00
-            };
-
-            AddChecksum(request);
-
-            List<byte> response =
-                SendTelegram(request, 50);
-
-            if (response.Count < 4)
-                throw new InvalidOperationException(
-                    "No valid response while changing remote control.");
-
-            if (response[3] != 0)
-            {
-                throw new InvalidOperationException(
-                    $"Remote Control command failed. Error code: {response[3]}");
-            }
-        }
-
-        // ---------------------------------------------------------
-        // POWER OUTPUT
-        // ---------------------------------------------------------
 
         public void SetPowerOutput(bool enabled)
         {
             EnsureConnected();
-
-            // OBJ 0x36 = Power supply control
-            // Mask 0x01 controls output state.
-            // Data 0x01 = ON
-            // Data 0x00 = OFF
 
             byte[] request =
             {
@@ -300,7 +241,9 @@ namespace PS2000Gui
                 0x00,
                 0x36,
                 0x01,
-                enabled ? (byte)0x01 : (byte)0x00,
+                enabled
+                    ? (byte)0x01
+                    : (byte)0x00,
                 0x00,
                 0x00
             };
@@ -310,20 +253,37 @@ namespace PS2000Gui
             List<byte> response =
                 SendTelegram(request, 50);
 
-            if (response.Count < 4)
-                throw new InvalidOperationException(
-                    "No valid response while changing power output.");
-
-            if (response[3] != 0)
-            {
-                throw new InvalidOperationException(
-                    $"Power Output command failed. Error code: {response[3]}");
-            }
+            ValidateCommandResponse(
+                response,
+                "Power output command");
         }
 
-        // ---------------------------------------------------------
-        // SERIAL COMMUNICATION
-        // ---------------------------------------------------------
+        public void SetRemoteControl(bool enabled)
+        {
+            EnsureConnected();
+
+            byte[] request =
+            {
+                0xF1,
+                0x00,
+                0x36,
+                0x10,
+                enabled
+                    ? (byte)0x10
+                    : (byte)0x00,
+                0x00,
+                0x00
+            };
+
+            AddChecksum(request);
+
+            List<byte> response =
+                SendTelegram(request, 50);
+
+            ValidateCommandResponse(
+                response,
+                "Remote control command");
+        }
 
         private List<byte> SendTelegram(
             byte[] telegram,
@@ -336,7 +296,6 @@ namespace PS2000Gui
             using SerialPort port =
                 CreateSerialPort(_portName!);
 
-            // The device requires a minimum interval between two telegrams.
             Thread.Sleep(500);
 
             port.Open();
@@ -346,9 +305,11 @@ namespace PS2000Gui
                 0,
                 telegram.Length);
 
-            Thread.Sleep(responseWaitMilliseconds);
+            Thread.Sleep(
+                responseWaitMilliseconds);
 
-            int length = port.BytesToRead;
+            int length =
+                port.BytesToRead;
 
             if (length > 0)
             {
@@ -391,11 +352,8 @@ namespace PS2000Gui
             };
         }
 
-        // ---------------------------------------------------------
-        // CHECKSUM
-        // ---------------------------------------------------------
-
-        private void AddChecksum(byte[] telegram)
+        private void AddChecksum(
+            byte[] telegram)
         {
             if (telegram.Length < 2)
             {
@@ -405,7 +363,6 @@ namespace PS2000Gui
 
             int sum = 0;
 
-            // The last two bytes are reserved for the checksum.
             for (int i = 0;
                  i < telegram.Length - 2;
                  i++)
@@ -418,6 +375,23 @@ namespace PS2000Gui
 
             telegram[telegram.Length - 1] =
                 (byte)(sum & 0xFF);
+        }
+
+        private void ValidateCommandResponse(
+            List<byte> response,
+            string command)
+        {
+            if (response.Count < 4)
+            {
+                throw new InvalidOperationException(
+                    $"No valid response for {command}.");
+            }
+
+            if (response[3] != 0)
+            {
+                throw new InvalidOperationException(
+                    $"{command} failed. Error code: {response[3]}");
+            }
         }
 
         private void EnsureConnected()
