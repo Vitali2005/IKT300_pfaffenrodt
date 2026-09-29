@@ -1723,11 +1723,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\vipfa\\Documents\\uia\\swa\\PS2000Gui\\PS2000Gui.csproj",
+      "projectUniqueName": "C:\\Users\\vipfa\\Documents\\uia\\swa\\PS2000\\PS2000Gui.csproj",
       "projectName": "PS2000Gui",
-      "projectPath": "C:\\Users\\vipfa\\Documents\\uia\\swa\\PS2000Gui\\PS2000Gui.csproj",
+      "projectPath": "C:\\Users\\vipfa\\Documents\\uia\\swa\\PS2000\\PS2000Gui.csproj",
       "packagesPath": "C:\\Users\\vipfa\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\vipfa\\Documents\\uia\\swa\\PS2000Gui\\obj\\",
+      "outputPath": "C:\\Users\\vipfa\\Documents\\uia\\swa\\PS2000\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\vipfa\\AppData\\Roaming\\NuGet\\NuGet.Config"

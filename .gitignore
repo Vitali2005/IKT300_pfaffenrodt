@@ -1,0 +1,22 @@
+# Build output
+bin/
+obj/
+
+# Visual Studio / VS Code user-specific files
+.vs/
+.vscode/
+
+# User-specific Visual Studio files
+*.user
+*.suo
+
+# Build logs
+*.log
+
+# NuGet generated files
+packages/
+*.nupkg
+
+# OS files
+.DS_Store
+Thumbs.db

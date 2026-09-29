@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "bip+bkg2LTc=",
+  "dgSpecHash": "BT7sa8hs2B0=",
   "success": true,
-  "projectFilePath": "C:\\Users\\vipfa\\Documents\\uia\\swa\\PS2000Gui\\PS2000Gui.csproj",
+  "projectFilePath": "C:\\Users\\vipfa\\Documents\\uia\\swa\\PS2000\\PS2000Gui.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\vipfa\\.nuget\\packages\\runtime.android-arm.runtime.native.system.io.ports\\10.0.11\\runtime.android-arm.runtime.native.system.io.ports.10.0.11.nupkg.sha512",
     "C:\\Users\\vipfa\\.nuget\\packages\\runtime.android-arm64.runtime.native.system.io.ports\\10.0.11\\runtime.android-arm64.runtime.native.system.io.ports.10.0.11.nupkg.sha512",
