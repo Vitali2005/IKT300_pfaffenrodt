@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO.Ports;
+using System.Text;
 using System.Threading;
 
 namespace PS2000Library
@@ -34,73 +35,33 @@ namespace PS2000Library
             _portName = null;
         }
 
+        // DEVICE INFORMATION
+
         public string GetDeviceType()
         {
-            EnsureConnected();
-
-            return "Needs Object List";
+            // Object 0 = Device type
+            return ReadStringObject(0x00);
         }
 
         public string GetSerialNumber()
         {
-            EnsureConnected();
-
-            byte[] request =
-            {
-                0x7F,
-                0x00,
-                0x01,
-                0x00,
-                0x80
-            };
-
-            List<byte> response = SendTelegram(request, 500);
-
-            if (response.Count < 4)
-            {
-                throw new InvalidOperationException(
-                    "Invalid response while reading serial number.");
-            }
-
-            string binary =
-                Convert.ToString(response[0], 2).PadLeft(8, '0');
-
-            string payloadLengthBinary =
-                binary.Substring(4);
-
-            int payloadLength =
-                Convert.ToInt32(payloadLengthBinary, 2);
-
-            if (response[2] != 0x01)
-            {
-                throw new InvalidOperationException(
-                    "PS2000 returned an unexpected object.");
-            }
-
-            string serialNumber = "";
-
-            for (int i = 0;
-                 i < payloadLength && (3 + i) < response.Count;
-                 i++)
-            {
-                serialNumber +=
-                    Convert.ToChar(response[3 + i]);
-            }
-
-            return serialNumber;
+            // Object 1 = Device serial number
+            return ReadStringObject(0x01);
         }
 
         public string GetArticleNumber()
         {
-            EnsureConnected();
-
-            return "Needs Object List";
+            // Object 6 = Device article number
+            return ReadStringObject(0x06);
         }
+
+        // VOLTAGE
 
         public double GetMaximumVoltage()
         {
             EnsureConnected();
 
+            // Object 2 = Nominal voltage
             byte[] request =
             {
                 0x74,
@@ -127,9 +88,7 @@ namespace PS2000Library
                 response[3]
             };
 
-            return BitConverter.ToSingle(
-                voltageBytes,
-                0);
+            return BitConverter.ToSingle(voltageBytes, 0);
         }
 
         public double GetCurrentVoltage()
@@ -142,9 +101,9 @@ namespace PS2000Library
                 0x10 +
                 5;
 
-            byte sd =
-                Convert.ToByte(sdHex);
+            byte sd = Convert.ToByte(sdHex);
 
+            // Object 71 / 0x47 = Status + actual values
             byte[] request =
             {
                 sd,
@@ -210,6 +169,7 @@ namespace PS2000Library
             byte lowByte =
                 (byte)(percentSetValue & 0xFF);
 
+            // Object 50 / 0x32 = Set voltage
             byte[] request =
             {
                 0xF2,
@@ -231,9 +191,17 @@ namespace PS2000Library
                 "Voltage change");
         }
 
+        // POWER OUTPUT
+
         public void SetPowerOutput(bool enabled)
         {
             EnsureConnected();
+
+            // Object 54 / 0x36 = Power supply control
+            //
+            // Mask 0x01:
+            // 0x01 = Output ON
+            // 0x00 = Output OFF
 
             byte[] request =
             {
@@ -258,9 +226,17 @@ namespace PS2000Library
                 "Power output command");
         }
 
+        // REMOTE CONTROL
+
         public void SetRemoteControl(bool enabled)
         {
             EnsureConnected();
+
+            // Object 54 / 0x36 = Power supply control
+            //
+            // Mask 0x10:
+            // 0x10 = Remote control
+            // 0x00 = Manual control
 
             byte[] request =
             {
@@ -284,6 +260,83 @@ namespace PS2000Library
                 response,
                 "Remote control command");
         }
+
+        // STRING OBJECTS
+
+        private string ReadStringObject(byte objectId)
+        {
+            EnsureConnected();
+
+            /*
+             * Device type, serial number and article number
+             * are all 16-byte string objects.
+             *
+             * 0x7F requests a 16-byte object.
+             */
+
+            byte[] request =
+            {
+                0x7F,
+                0x00,
+                objectId,
+                0x00,
+                0x00
+            };
+
+            AddChecksum(request);
+
+            List<byte> response =
+                SendTelegram(request, 500);
+
+            if (response.Count < 5)
+            {
+                throw new InvalidOperationException(
+                    $"Invalid response for object {objectId}.");
+            }
+
+            if (response[2] != objectId)
+            {
+                throw new InvalidOperationException(
+                    $"Unexpected object returned by PS2000. " +
+                    $"Expected {objectId}, received {response[2]}.");
+            }
+
+            /*
+             * The lower four bits contain data length - 1.
+             *
+             * 0xF therefore means:
+             * 15 + 1 = 16 bytes.
+             */
+            int payloadLength =
+                (response[0] & 0x0F) + 1;
+
+            // Structure:
+            // SD | DN | OBJ | DATA... | CHECKSUM1 | CHECKSUM2
+            int availableDataLength =
+                response.Count - 5;
+
+            int bytesToRead =
+                Math.Min(
+                    payloadLength,
+                    availableDataLength);
+
+            StringBuilder result = new();
+
+            for (int i = 0; i < bytesToRead; i++)
+            {
+                byte value = response[3 + i];
+
+                // Strings use 0x00 as End Of Line.
+                if (value == 0x00)
+                    break;
+
+                result.Append((char)value);
+            }
+
+            return result.ToString();
+        }
+
+        // SERIAL COMMUNICATION
 
         private List<byte> SendTelegram(
             byte[] telegram,
@@ -352,8 +405,9 @@ namespace PS2000Library
             };
         }
 
-        private void AddChecksum(
-            byte[] telegram)
+        // CHECKSUM
+
+        private void AddChecksum(byte[] telegram)
         {
             if (telegram.Length < 2)
             {
