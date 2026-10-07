@@ -15,33 +15,6 @@ namespace PS2000Gui
 
             _powerSupply =
                 PowerSupplyFactory.Create();
-
-            RefreshPorts();
-        }
-
-        private void RefreshPorts()
-        {
-            PortComboBox.Items.Clear();
-
-            string[] ports =
-                _powerSupply.GetAvailablePorts();
-
-            foreach (string port in ports)
-            {
-                PortComboBox.Items.Add(port);
-            }
-
-            if (PortComboBox.Items.Count > 0)
-            {
-                PortComboBox.SelectedIndex = 0;
-            }
-        }
-
-        private void RefreshPortsButton_Click(
-            object sender,
-            RoutedEventArgs e)
-        {
-            RefreshPorts();
         }
 
         private void ConnectButton_Click(
@@ -50,26 +23,12 @@ namespace PS2000Gui
         {
             try
             {
-                if (PortComboBox.SelectedItem == null)
-                {
-                    MessageBox.Show(
-                        "Please select a COM port.",
-                        "PS2000",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Warning);
-
-                    return;
-                }
-
-                string port =
-                    PortComboBox.SelectedItem.ToString()!;
-
-                _powerSupply.Connect(port);
+                _powerSupply.Connect();
 
                 LoadDeviceInformation();
 
                 MessageBox.Show(
-                    $"Connected to {port}.",
+                    "Connected to PS2000.",
                     "PS2000",
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);

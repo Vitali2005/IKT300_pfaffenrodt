@@ -4,9 +4,7 @@ namespace PS2000Library
     {
         bool IsConnected { get; }
 
-        string[] GetAvailablePorts();
-
-        void Connect(string portName);
+        void Connect();
         void Disconnect();
 
         string GetDeviceType();

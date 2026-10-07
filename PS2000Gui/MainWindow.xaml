@@ -36,15 +36,6 @@
                     Grid.ColumnSpan="2"
                     Orientation="Horizontal">
 
-            <ComboBox x:Name="PortComboBox"
-                    Width="120"
-                    Margin="0,0,10,0"/>
-
-            <Button Content="Refresh Ports"
-                    Width="100"
-                    Margin="0,0,10,0"
-                    Click="RefreshPortsButton_Click"/>
-
             <Button Content="Connect PS2000"
                     Width="130"
                     Click="ConnectButton_Click"/>

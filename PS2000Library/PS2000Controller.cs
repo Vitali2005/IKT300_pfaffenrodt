@@ -12,22 +12,46 @@ namespace PS2000Library
 
         public bool IsConnected => _portName != null;
 
-        public string[] GetAvailablePorts()
-        {
-            return SerialPort.GetPortNames();
-        }
-
-        public void Connect(string portName)
+        public void Connect()
         {
             if (IsConnected)
                 return;
 
-            using SerialPort port = CreateSerialPort(portName);
+            string[] ports = SerialPort.GetPortNames();
 
-            port.Open();
-            port.Close();
+            if (ports.Length == 0)
+            {
+                throw new InvalidOperationException(
+                    "No serial ports were found.");
+            }
 
-            _portName = portName;
+            foreach (string portName in ports)
+            {
+                try
+                {
+                    // Temporarily select this port.
+                    _portName = portName;
+
+                    // Object 0 is the device type.
+                    // If this succeeds and returns a value,
+                    // we have found the PS2000.
+                    string deviceType = ReadStringObject(0x00);
+
+                    if (!string.IsNullOrWhiteSpace(deviceType))
+                    {
+                        return;
+                    }
+                }
+                catch
+                {
+                    // This port is not the PS2000.
+                }
+
+                _portName = null;
+            }
+
+            throw new InvalidOperationException(
+                "No PS2000 power supply was found.");
         }
 
         public void Disconnect()
