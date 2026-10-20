@@ -1,15 +1,16 @@
-﻿<Window x:Class="PS2000Gui.MainWindow"
+<Window x:Class="PS2000Gui.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="PS2000 Control"
-        Height="520"
-        Width="600">
+        Title="PS2000 MQTT Control"
+        Height="600"
+        Width="650">
 
     <Grid Margin="20">
 
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="20"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="25"/>
 
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -22,6 +23,9 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+
+            <RowDefinition Height="30"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <Grid.ColumnDefinitions>
@@ -29,70 +33,100 @@
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <!-- Connection -->
+        <!-- MQTT connection -->
+
+        <TextBlock Grid.Row="0"
+                   Grid.Column="0"
+                   Text="MQTT Server:"
+                   VerticalAlignment="Center"
+                   Margin="0,5"/>
 
         <StackPanel Grid.Row="0"
-                    Grid.Column="0"
-                    Grid.ColumnSpan="2"
+                    Grid.Column="1"
                     Orientation="Horizontal">
 
-            <Button Content="Connect PS2000"
-                    Width="130"
+            <TextBox x:Name="MqttServerInput"
+                     Text="localhost"
+                     Width="180"
+                     Margin="0,0,10,0"/>
+
+            <Button Content="Connect MQTT"
+                    Width="120"
                     Click="ConnectButton_Click"/>
+        </StackPanel>
+
+        <TextBlock Grid.Row="1"
+                   Grid.Column="0"
+                   Text="PSU ID:"
+                   VerticalAlignment="Center"
+                   Margin="0,5"/>
+
+        <StackPanel Grid.Row="1"
+                    Grid.Column="1"
+                    Orientation="Horizontal">
+
+            <TextBox x:Name="PsuIdInput"
+                     Text="1"
+                     Width="100"
+                     Margin="0,0,15,0"/>
+
+            <TextBlock x:Name="ConnectionStatusText"
+                       Text="Not connected"
+                       VerticalAlignment="Center"/>
         </StackPanel>
 
         <!-- Device information -->
 
-        <TextBlock Grid.Row="2"
+        <TextBlock Grid.Row="3"
                    Grid.Column="0"
                    Text="Device Type:"
                    Margin="0,5"/>
 
-        <TextBlock Grid.Row="2"
+        <TextBlock Grid.Row="3"
                    Grid.Column="1"
                    x:Name="DeviceTypeText"
                    Text="---"
                    Margin="0,5"/>
 
-        <TextBlock Grid.Row="3"
+        <TextBlock Grid.Row="4"
                    Grid.Column="0"
                    Text="Serial Number:"
                    Margin="0,5"/>
 
-        <TextBlock Grid.Row="3"
+        <TextBlock Grid.Row="4"
                    Grid.Column="1"
                    x:Name="SerialNumberText"
                    Text="---"
                    Margin="0,5"/>
 
-        <TextBlock Grid.Row="4"
+        <TextBlock Grid.Row="5"
                    Grid.Column="0"
                    Text="Article Number:"
                    Margin="0,5"/>
 
-        <TextBlock Grid.Row="4"
+        <TextBlock Grid.Row="5"
                    Grid.Column="1"
                    x:Name="ArticleNumberText"
                    Text="---"
                    Margin="0,5"/>
 
-        <TextBlock Grid.Row="5"
+        <TextBlock Grid.Row="6"
                    Grid.Column="0"
                    Text="Maximum Voltage:"
                    Margin="0,5"/>
 
-        <TextBlock Grid.Row="5"
+        <TextBlock Grid.Row="6"
                    Grid.Column="1"
                    x:Name="MaxVoltageText"
                    Text="--- V"
                    Margin="0,5"/>
 
-        <TextBlock Grid.Row="6"
+        <TextBlock Grid.Row="7"
                    Grid.Column="0"
                    Text="Current Voltage:"
                    Margin="0,5"/>
 
-        <StackPanel Grid.Row="6"
+        <StackPanel Grid.Row="7"
                     Grid.Column="1"
                     Orientation="Horizontal">
 
@@ -105,17 +139,16 @@
             <Button Content="Refresh"
                     Width="100"
                     Click="RefreshVoltageButton_Click"/>
-
         </StackPanel>
 
         <!-- Set Voltage -->
 
-        <TextBlock Grid.Row="8"
+        <TextBlock Grid.Row="9"
                    Grid.Column="0"
                    Text="Set Voltage:"
                    Margin="0,5"/>
 
-        <StackPanel Grid.Row="8"
+        <StackPanel Grid.Row="9"
                     Grid.Column="1"
                     Orientation="Horizontal">
 
@@ -130,12 +163,12 @@
 
         <!-- Output -->
 
-        <TextBlock Grid.Row="9"
+        <TextBlock Grid.Row="10"
                    Grid.Column="0"
                    Text="Power Output:"
                    Margin="0,5"/>
 
-        <StackPanel Grid.Row="9"
+        <StackPanel Grid.Row="10"
                     Grid.Column="1"
                     Orientation="Horizontal">
 
@@ -151,12 +184,12 @@
 
         <!-- Remote Control -->
 
-        <TextBlock Grid.Row="10"
+        <TextBlock Grid.Row="11"
                    Grid.Column="0"
                    Text="Remote Control:"
                    Margin="0,5"/>
 
-        <StackPanel Grid.Row="10"
+        <StackPanel Grid.Row="11"
                     Grid.Column="1"
                     Orientation="Horizontal">
 
@@ -170,5 +203,18 @@
                     Click="RemoteOffButton_Click"/>
         </StackPanel>
 
+        <!-- MQTT status -->
+
+        <TextBlock Grid.Row="13"
+                   Grid.Column="0"
+                   Text="MQTT Status:"
+                   Margin="0,5"/>
+
+        <TextBlock Grid.Row="13"
+                   Grid.Column="1"
+                   x:Name="MqttStatusText"
+                   Text="---"
+                   TextWrapping="Wrap"
+                   Margin="0,5"/>
     </Grid>
 </Window>
